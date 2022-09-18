@@ -1,4 +1,4 @@
-# Import the necessary ibraries
+# Import the necessary libraries
 import numpy as np
 from collections import deque 
 
@@ -115,8 +115,6 @@ def genWorlds():
     for i in range(10):
         grid = generateMap()["grid"]
         world.append(grid)
-        print(world[-1], grid.shape)
-        print(BFS(world[-1])["statusCode"])
 
 # Driver Code       
 #genWorlds()
@@ -230,17 +228,27 @@ def isMapValid(grid):
     elif BFS(grid)["statusCode"] == 400:
         return False
 
-def genWorlds():
+def genWorld():
     """_summary_
-        Generate multiple combinations of 51x51 block maze and verify if there is a possible route to reach the goal node for the agent  
+
+    Returns:
+        _type_: _description_
     """
-    world = list()        
-    for i in range(10):
+    world = list()
+    failedWorld = list()
+    noOfGrids = 10   
+    for i in range(noOfGrids):
+        temp = {}
         grid = generateMap()["grid"]
-        world.append(grid)
-        print(world[-1], grid.shape)
-        print(BFS(world[-1])["statusCode"])
+        if BFS(grid)["statusCode"] == 200:
+            temp["grid"] = grid
+            temp["BFS"] = BFS(grid)
+            world.append(temp)
+        elif BFS(grid)["statusCode"] == 400:
+            failedWorld.append(grid)
+    return world
+
 
 # Driver Code       
-genWorlds()
+# world = genWorld()
     
