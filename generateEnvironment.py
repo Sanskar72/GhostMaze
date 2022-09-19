@@ -92,10 +92,10 @@ def BFS(grid, size = 51):
                 
     return {"statusCode": 400, "path":"route DNE"}
 
-#  Function to check if a generated grid is solvable or not
+
 def isMapValid(grid):
     """_summary_
-
+        Function to check if a generated grid is solvable or not
     Args:
         grid (_type_): _description_
 
@@ -119,6 +119,8 @@ def genWorlds():
 # Driver Code       
 #genWorlds()
     
+
+
 # Import the necessary ibraries
 import numpy as np
 from collections import deque 
@@ -213,15 +215,15 @@ def BFS(grid, size = 51):
                 
     return {"statusCode": 400, "path":"route DNE"}
 
-#  Function to check if a generated grid is solvable or not
+
 def isMapValid(grid):
     """_summary_
-
+        Function to check if a generated grid is solvable or not
     Args:
-        grid (_type_): _description_
+        grid (_type_): The 51x51 maze with 72% unblocked cells and 28% locked cells
 
     Returns:
-        _type_: _description_
+        _type_: True if there exists a path between the agent and the goal state otherwise False
     """
     if BFS(grid)["statusCode"] == 200:
         return True
@@ -230,9 +232,9 @@ def isMapValid(grid):
 
 def genWorld():
     """_summary_
-
+        Generate multiple combinations of 51x51 block maze and verify if there is a possible route to reach the goal node for the agent  
     Returns:
-        _type_: _description_
+        _type_: List of 2-D Arrays
     """
     world = list()
     failedWorld = list()
