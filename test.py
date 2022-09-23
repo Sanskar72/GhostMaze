@@ -2,7 +2,7 @@
 import numpy as np
 from collections import deque 
 
-size = 5
+size = 8
 def generateMap(size = 51):
     """_summary_
         Generate the size=51x51 block grid with 72% unblocked and 28% blocked cells
@@ -90,7 +90,7 @@ def BFS(grid, size = 51):
                 startQ.append([childX, childY])  
                 visited[childX, childY] = True
                 
-    return {"statusCode": 400, "path":"route DNE"}
+    return {"statusCode": 400, "path":path}
 
 
 
@@ -117,4 +117,4 @@ def genWorld():
 
 #Driver Code       
 world, size = genWorld()
-print(world[0]['BFS'])
+print(world[0]['BFS']['path'])
