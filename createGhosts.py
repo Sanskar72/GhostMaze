@@ -29,7 +29,6 @@ def fillGridWithGhosts(grid, noOFGhosts, size):
         _type_: list of indices of the ghosts
     """
     ghostGrid = []
-   
     if grid.shape[0] == size:
         for i in range(noOFGhosts):
             x, y = createGhost(size)

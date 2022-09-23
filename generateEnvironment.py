@@ -1,8 +1,9 @@
 # Import the necessary ibraries
 import numpy as np
 from collections import deque 
+import time
 
-size = 5
+size = 51
 def generateMap(size = 51):
     """_summary_
         Generate the size=51x51 block grid with 72% unblocked and 28% blocked cells
@@ -69,7 +70,6 @@ def BFS(grid, size = 51):
     startQ = deque()
     path = deque()
     startX, startY = 0, 0
-    goalX, goalY = size - 1, size - 1
     
     # Mark the starting cell as visited and push it into the goal queue
     startQ.append([startX,startY])
@@ -102,7 +102,7 @@ def genWorld():
     """
     world = list()
     failedWorld = list()
-    noOfGrids = 10   
+    noOfGrids = 5
     for i in range(noOfGrids):
         temp = {}
         grid = generateMap(size=size)["grid"]
@@ -115,6 +115,14 @@ def genWorld():
     return world, size
 
 
-#Driver Code       
-world, size = genWorld()
-print(world[0]['BFS'])
+# #Driver Code
+# tic = time.perf_counter()       
+# world, size = genWorld()
+# c200 = 0
+# for env in world:
+#     if env["BFS"]["statusCode"] == 200:
+#         c200 += 1
+        
+# print("200:", c200)
+# toc = time.perf_counter()
+# print(toc-tic)
