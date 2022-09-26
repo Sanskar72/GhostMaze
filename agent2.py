@@ -228,7 +228,7 @@ def agent2init():
     ghostGrid, grid, prevPosition, size = initializer()
     agent2_data = executeBFS(grid, size, ghostGrid, prevPosition)
     agent2_data["steps"] = len(agent2_data["path"])
-    print("SC: ",agent2_data["statusCode"], "STEPS: ", agent2_data["steps"])
+    print("SC: ",agent2_data["statusCode"], "STEPS: ", agent2_data["steps"], agent2_data["path"])
     
 tic = time.perf_counter()
 agent2init()
