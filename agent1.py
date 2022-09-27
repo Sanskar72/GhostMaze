@@ -171,25 +171,15 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
         x1, y1 = pos[0], pos[1]
     else:
         x1, y1 = 0, 0
-    finalPath = list()
     route = 1
     counter = 0
     print(grid)
 
     # Iterate while the queue is not empty
-    while [x1,y1] not in ghostGrid and counter<500:
+    while [x1,y1] not in ghostGrid and counter<1200:
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
+            return {"statusCode":200, "path":path}
         
-        #BFS PLAN
-        visited=[[True]*size for _ in range(size)]
-        for ghost in ghostGrid:
-            if ghost in path:
-                dictBFS = planBFS(grid, x1, y1, visited, size = size)
-                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-                route = 1
-        
-
         #AGENT MOVE
         if statusCode == 200:
             path = cleanPath(path)
@@ -197,51 +187,35 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
             #     print(item["x"], item["y"])
             pos = path[route]
             x1, y1 = pos[0], pos[1]
-            finalPath.append([x1,y1])
             route += 1
-            
-        elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
-            # #IF DIST FROM GHOST<THRESHOLD, MOVE AGENT.
-            # if isValid(x1-1, y1, size, grid):
-            #     x1 -= 1
-            # elif isValid(x1, y1-1, size, grid):
-            #     y1 -= 1
-            # elif isValid(x1+1, y1, size, grid):
-            #     x1 += 1
-            # elif isValid(x1, y1+1, size, grid):
-            #     y1 += 1
-            
-            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-            
-            finalPath.append([x1,y1])
-            
-        #GHOST MOVE
+        
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
         counter += 1
         # if counter%30==0:
-        #     print("counter:",counter)
-        #     print("Ghost: ", ghostGrid)
-        #     print("Agent: ", x1,y1)
-        #     print("==================================")
-        
+            # print("counter:",counter)
+            # print("Ghost: ", ghostGrid)
+            # print("Agent: ", x1,y1)
+            # print("==================================")
     print("counter:",counter)
     print("Ghost: ", ghostGrid)
     print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":finalPath}
+    return {"statusCode":400, "path":path}
 
-def agent2init():
+def agent1init():
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts=1)
-    agent2_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent2_data["steps"] = len(agent2_data["path"])
-    print("SC: ",agent2_data["statusCode"], "STEPS: ", agent2_data["steps"])
+    agent1_data = executeBFS(grid, size, ghostGrid, prevPosition)
+    agent1_data["steps"] = len(agent1_data["path"])
+    print("SC: ",agent1_data["statusCode"], "STEPS: ", agent1_data["steps"])
     
 for i in range(5):
     tic = time.perf_counter()
-    agent2init()
+    agent1init()
     print("=======================================================")
     toc = time.perf_counter()
     print("time: ",toc-tic)
     print("=======================================================")
+    
+
 
 
 

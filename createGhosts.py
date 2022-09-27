@@ -181,13 +181,12 @@ def saveWorld(grid, ghostGrid):
     return prevPosition
 
                 
-def initializer():
+def initializer(noOfGhosts):
     """_summary_
         Driver code to call the functions to generate maze, ghosts, and save the previous location value of the ghost location
     """
     world, size = genWorld()
     grid = world[0]["grid"]
-    noOfGhosts = 1
 
     # print('Before Adding GHosts:\n',grid)
     

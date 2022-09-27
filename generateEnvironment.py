@@ -3,7 +3,7 @@ import numpy as np
 from collections import deque 
 import time
 
-size = 10
+size = 5
 def generateMap(size = 51):
     """_summary_
         Generate the size=51x51 block grid with 72% unblocked and 28% blocked cells

@@ -229,15 +229,15 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     print("Agent: ", x1,y1)
     return {"statusCode":400, "path":finalPath}
 
-def agent2init():
+def agent3init():
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts=1)
-    agent2_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent2_data["steps"] = len(agent2_data["path"])
-    print("SC: ",agent2_data["statusCode"], "STEPS: ", agent2_data["steps"])
+    agent3_data = executeBFS(grid, size, ghostGrid, prevPosition)
+    agent3_data["steps"] = len(agent3_data["path"])
+    print("SC: ",agent3_data["statusCode"], "STEPS: ", agent3_data["steps"])
     
 for i in range(5):
     tic = time.perf_counter()
-    agent2init()
+    agent3init()
     print("=======================================================")
     toc = time.perf_counter()
     print("time: ",toc-tic)
