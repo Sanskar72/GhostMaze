@@ -32,11 +32,11 @@ def isValid(a, b, size, visited, grid):
     """_summary_
         Checking for boundary conditions and overall validity
     Args:
-        a (_type_): Integer index declaration
-        b (_type_): Integer index declaration
-        size (_type_): Order of the square matrix used for traversal.
-        visited (_type_): A list to append the visited Locations of the maze
-        grid (_type_): The different combinations of 51x51 square matrix/maze generated
+        a (int): Integer index declaration
+        b (int): Integer index declaration
+        size (int): Order of the square matrix used for traversal.
+        visited (list): A list to append the visited Locations of the maze
+        grid (2D List): The different combinations of 51x51 square matrix/maze generated
 
     Returns: False based on the condition satisfaction of the degree of the maze & True if the location is visited or blocked
         _type_: Boolean
@@ -56,7 +56,7 @@ def BFS(grid, size = 51):
     """_summary_
         Performing Breadth First Search to reach to the goal block location
     Args:
-        grid (_type_): The different combinations of 51x51 square matrix/maze generated
+        grid (2D List): The different combinations of 51x51 square matrix/maze generated
         size (int, optional): Order of the matrix/maze used. Defaults to 51.
 
     Returns: StatusCode if there is a successful way for the agent to reach its goal/ bottom-right node

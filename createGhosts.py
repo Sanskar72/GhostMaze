@@ -1,3 +1,4 @@
+# Import Packages and Functions
 from generateEnvironment import genWorld
 import numpy as np
 import random 
@@ -77,11 +78,12 @@ def ghostMoves(grid, ghostGrid, prevPosition):
         x, y = pos[0], pos[1]
 
 
-
+        # Probability that the Ghost is in the middle region of the maze
         if pos[0] not in bound and pos[1] not in bound:
             prob = random.randrange(100)
             #print("1",x, y, prob)
 
+        # Computation for Ghost Movement when its in the upper corners or 1st row
         elif pos[0]==0:
             if pos[0]==0 and pos[1]==0:
                 prob = random.randrange(51,100)
@@ -96,7 +98,7 @@ def ghostMoves(grid, ghostGrid, prevPosition):
                 #print("4",x, y, prob)
 
 
-
+        # Computation for Ghost Movement when its in the bottom corners or last row
         elif pos[0]==grid.shape[0]-1:
             if pos[0]==grid.shape[0]-1 and pos[1]==0:
                 prob=random.randrange(26,75)
@@ -108,10 +110,12 @@ def ghostMoves(grid, ghostGrid, prevPosition):
                 prob=random.randrange(75)
                 #print("7",x, y, prob)
 
+        # Computation for Ghost Movement when its in the left most column
         elif pos[1]==0:
             prob = random.randrange(26,100) 
             #print("8",x, y, prob)
 
+        # Computation for Ghost Movement when its in the right most column
         elif pos[1]==grid.shape[0]-1:
             range=random.choice([[1,50],[76,100]])
             prob = random.randrange(range[0],range[1])
