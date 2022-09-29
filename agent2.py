@@ -75,9 +75,7 @@ def measureDist(x1, y1, grid, ghostGrid, size):
             y1 -= 1
         elif isValid(x1, y1+1, size, grid):
             y1 += 1
-            
-        
-    
+             
     return x1, y1
 
 def planBFS(grid, i, j, visited, size):
@@ -174,7 +172,6 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     finalPath = list()
     route = 1
     counter = 0
-    print(grid)
 
     # Iterate while the queue is not empty
     while [x1,y1] not in ghostGrid and counter<500:
@@ -231,16 +228,17 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
 
 def agent2init():
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts=1)
+    print(grid)
     agent2_data = executeBFS(grid, size, ghostGrid, prevPosition)
     agent2_data["steps"] = len(agent2_data["path"])
     print("SC: ",agent2_data["statusCode"], "STEPS: ", agent2_data["steps"])
     
-for i in range(5):
-    tic = time.perf_counter()
+for i in range(1):
+    #tic = time.perf_counter()
     agent2init()
     print("=======================================================")
-    toc = time.perf_counter()
-    print("time: ",toc-tic)
+    #toc = time.perf_counter()
+    #print("time: ",toc-tic)
     print("=======================================================")
 
 
