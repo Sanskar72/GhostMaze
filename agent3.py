@@ -1,4 +1,5 @@
-from createGhosts import ghostMoves, initializer
+from distutils.command.clean import clean
+from createGhosts import ghostMoves, initializer, saveWorld
 from collections import deque
 import numpy as np
 import time
@@ -54,7 +55,7 @@ def isValid(a, b, size, grid):
     return True
 
 def measureDist(x1, y1, grid, ghostGrid, size):
-    #print("IN DIST VALA FN=====================================================")
+    #print("IN DIST VALA FN")
     dir = list()
     dist = list()
     for ghost in ghostGrid:
@@ -79,6 +80,14 @@ def measureDist(x1, y1, grid, ghostGrid, size):
         
     
     return x1, y1
+
+def getClosestGhost(x1, y1, ghostGrid):
+    dist = list()
+    for ghost in ghostGrid:
+        dist.append(np.sqrt((ghost[0]-x1)**2 + (ghost[1]-y1)**2))
+
+    return np.argmin(dist)
+
 
 def planBFS(grid, i, j, visited, size):
     # Initially starting at (0, 0).
@@ -155,87 +164,227 @@ def planBFS(grid, i, j, visited, size):
     return {"statusCode":400, "path":s}
 
 def executeBFS(grid, size, ghostGrid, prevPosition):
-    # Stores indices of the location of the maze cells
-    #visited = np.array([[False]*size]*size)
-    #childRow = [-1, 0, 1, 0]
-    #childCol = [0, 1, 0 ,-1]
-    
-    #goalQ.append(grid[goalX, goalY])
-    startX, startY = 0, 0
-    visited=[[True]*size for _ in range(size)]
-    dictBFS = planBFS(grid, startX, startY, visited, size = size)
-    statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-    path = cleanPath(path)
-    if len(path)>0:
-        pos = path[0]
-        x1, y1 = pos[0], pos[1]
-    else:
-        x1, y1 = 0, 0
-    finalPath = list()
-    route = 1
+    x1, y1 = 0, 0
     counter = 0
-    print(grid)
-
-    # Iterate while the queue is not empty
-    while [x1,y1] not in ghostGrid and counter<500:
+    finalPath = [[0,0]]
+    while(counter<500 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":finalPath}
-        
-        #BFS PLAN
-        visited=[[True]*size for _ in range(size)]
-        for ghost in ghostGrid:
-            if ghost in path:
-                dictBFS = planBFS(grid, x1, y1, visited, size = size)
-                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-                route = 1
-        
 
-        #AGENT MOVE
-        if statusCode == 200:
-            path = cleanPath(path)
-            # for item in path:
-            #     print(item["x"], item["y"])
-            pos = path[route]
-            x1, y1 = pos[0], pos[1]
-            finalPath.append([x1,y1])
-            route += 1
-            
-        elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
-            # #IF DIST FROM GHOST<THRESHOLD, MOVE AGENT.
-            # if isValid(x1-1, y1, size, grid):
-            #     x1 -= 1
-            # elif isValid(x1, y1-1, size, grid):
-            #     y1 -= 1
-            # elif isValid(x1+1, y1, size, grid):
-            #     x1 += 1
-            # elif isValid(x1, y1+1, size, grid):
-            #     y1 += 1
-            
-            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-            
-            finalPath.append([x1,y1])
-            
-        #GHOST MOVE
+        #START SIMULATION
+        maxVal = 1000000
+        finalDict = {"pathLen": maxVal, "nextStep": [x1,y1]}
+        visited=[[True]*size for _ in range(size)]
+        if isValid(x1+1, y1, size, grid):#AGENT MOVES DOWN
+            dictBFS = planBFS(grid, x1+1, y1, visited, size)
+            if dictBFS["statusCode"] == 200:
+                path = dictBFS["path"]
+                path = cleanPath(path)
+                #SIMULATE  CLOSEST GHOST MOVEMENT
+                closestGhost = getClosestGhost(x1+1, y1, ghostGrid)
+                ghostX, ghostY = ghostGrid[closestGhost][0], ghostGrid[closestGhost][1]
+                if ghostX+1<size:#GHOST MOVE DOWN
+                    prevGhostMovementVal = grid[ghostX+1][ghostY]
+                    grid[ghostX+1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1+1, y1, visited, size)
+                    grid[ghostX+1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1+1,y1]
+
+                if ghostX-1>=0:#GHOST MOVE UP
+                    prevGhostMovementVal = grid[ghostX-1][ghostY]
+                    grid[ghostX-1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1+1, y1, visited, size)
+                    grid[ghostX-1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1+1,y1]
+
+                if ghostY+1<size:#GHOST MOVE RIGHT
+                    prevGhostMovementVal = grid[ghostX][ghostY+1]
+                    grid[ghostX][ghostY+1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1+1, y1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1+1,y1]
+
+                if ghostY-1>=0:#GHOST MOVE LEFT
+                    prevGhostMovementVal = grid[ghostX][ghostY-1]
+                    grid[ghostX][ghostY-1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1+1, y1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1+1,y1]
+
+        elif isValid(x1, y1+1, size, grid):#AGENT MOVES RIGHT
+            dictBFS = planBFS(grid, x1, y1+1, visited, size)
+            if dictBFS["statusCode"] == 200:
+                path = dictBFS["path"]
+                path = cleanPath(path)
+                #SIMULATE  CLOSEST GHOST MOVEMENT
+                closestGhost = getClosestGhost(x1, y1+1, ghostGrid)
+                ghostX, ghostY = ghostGrid[closestGhost][0], ghostGrid[closestGhost][1]
+                if ghostX+1<size:#GHOST MOVE DOWN
+                    prevGhostMovementVal = grid[ghostX+1][ghostY]
+                    grid[ghostX+1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1+1, visited, size)
+                    grid[ghostX+1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1+1]
+
+                if ghostX-1>=0:#GHOST MOVE UP
+                    prevGhostMovementVal = grid[ghostX-1][ghostY]
+                    grid[ghostX-1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1+1, visited, size)
+                    grid[ghostX-1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1+1]
+
+                if ghostY+1<size:#GHOST MOVE RIGHT
+                    prevGhostMovementVal = grid[ghostX][ghostY+1]
+                    grid[ghostX][ghostY+1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1+1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1+1]
+
+                if ghostY-1>=0:#GHOST MOVE LEFT
+                    prevGhostMovementVal = grid[ghostX][ghostY-1]
+                    grid[ghostX][ghostY-1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1+1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1+1]
+
+
+
+        elif isValid(x1-1, y1, size, grid):#AGENT MOVES UP
+            dictBFS = planBFS(grid, x1-1, y1, visited, size)
+            if dictBFS["statusCode"] == 200:
+                path = dictBFS["path"]
+                path = cleanPath(path)
+                #SIMULATE  CLOSEST GHOST MOVEMENT
+                closestGhost = getClosestGhost(x1-1, y1, ghostGrid)
+                ghostX, ghostY = ghostGrid[closestGhost][0], ghostGrid[closestGhost][1]
+                if ghostX+1<size:#GHOST MOVE DOWN
+                    prevGhostMovementVal = grid[ghostX+1][ghostY]
+                    grid[ghostX+1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1-1, y1, visited, size)
+                    grid[ghostX+1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1-1,y1]
+
+                if ghostX-1>=0:#GHOST MOVE UP
+                    prevGhostMovementVal = grid[ghostX-1][ghostY]
+                    grid[ghostX-1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1-1, y1, visited, size)
+                    grid[ghostX-1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1-1,y1]
+
+                if ghostY+1<size:#GHOST MOVE RIGHT
+                    prevGhostMovementVal = grid[ghostX][ghostY+1]
+                    grid[ghostX][ghostY+1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1-1, y1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1-1,y1]
+
+                if ghostY-1>=0:#GHOST MOVE LEFT
+                    prevGhostMovementVal = grid[ghostX][ghostY-1]
+                    grid[ghostX][ghostY-1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1-1, y1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1-1,y1]
+
+
+
+        elif isValid(x1, y1-1, size, grid):#AGENT MOVES LEFT
+            dictBFS = planBFS(grid, x1, y1-1, visited, size)
+            if dictBFS["statusCode"] == 200:
+                path = dictBFS["path"]
+                path = cleanPath(path)
+                #SIMULATE  CLOSEST GHOST MOVEMENT
+                closestGhost = getClosestGhost(x1, y1-1, ghostGrid)
+                ghostX, ghostY = ghostGrid[closestGhost][0], ghostGrid[closestGhost][1]
+                if ghostX+1<size:#GHOST MOVE DOWN
+                    prevGhostMovementVal = grid[ghostX+1][ghostY]
+                    grid[ghostX+1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1-1, visited, size)
+                    grid[ghostX+1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1-1]
+
+                if ghostX-1>=0:#GHOST MOVE UP
+                    prevGhostMovementVal = grid[ghostX-1][ghostY]
+                    grid[ghostX-1][ghostY] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1-1, visited, size)
+                    grid[ghostX-1][ghostY] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1-1]
+
+                if ghostY+1<size:#GHOST MOVE RIGHT
+                    prevGhostMovementVal = grid[ghostX][ghostY+1]
+                    grid[ghostX][ghostY+1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1-1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1-1]
+
+                if ghostY-1>=0:#GHOST MOVE LEFT
+                    prevGhostMovementVal = grid[ghostX][ghostY-1]
+                    grid[ghostX][ghostY-1] = -1
+                    visited=[[True]*size for _ in range(size)]
+                    dictBFS = planBFS(grid, x1, y1-1, visited, size)
+                    grid[ghostX][ghostY-1] = prevGhostMovementVal
+                    if dictBFS["statusCode"] == 200 and len(path)<finalDict["pathLen"]:
+                        finalDict["pathLen"], finalDict["nextStep"] = len(path), [x1,y1-1]
+
+
+        x1, y1 = finalDict["nextStep"][0], finalDict["nextStep"][1]
+        finalPath.append([x1,y1])
+
+        #MOVE GHOSTS
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
         counter += 1
-        # if counter%30==0:
-        #     print("counter:",counter)
-        #     print("Ghost: ", ghostGrid)
-        #     print("Agent: ", x1,y1)
-        #     print("==================================")
-        
+
+        print("===================================")
+        print("counter:",counter)
+        print("Ghost: ", ghostGrid)
+        print("Agent: ", x1,y1)
+
+    print("===================================")
     print("counter:",counter)
     print("Ghost: ", ghostGrid)
     print("Agent: ", x1,y1)
     return {"statusCode":400, "path":finalPath}
 
+
 def agent3init():
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts=1)
+    OGgrid = grid
     agent3_data = executeBFS(grid, size, ghostGrid, prevPosition)
     agent3_data["steps"] = len(agent3_data["path"])
+    print("Final grid: \n",grid)
+    print("OG grid: \n",OGgrid)
     print("SC: ",agent3_data["statusCode"], "STEPS: ", agent3_data["steps"])
     
-for i in range(5):
+for i in range(1):
     tic = time.perf_counter()
     agent3init()
     print("=======================================================")
