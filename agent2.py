@@ -253,15 +253,11 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
         #GHOST MOVE
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
         counter += 1
-        # if counter%30==0:
-        #     print("counter:",counter)
-        #     print("Ghost: ", ghostGrid)
-        #     print("Agent: ", x1,y1)
-        #     print("==================================")
+        print("counter:",counter)
+        print("Ghost: ", ghostGrid)
+        print("Agent: ", x1,y1)
+        print("==================================")
         
-    print("counter:",counter)
-    print("Ghost: ", ghostGrid)
-    print("Agent: ", x1,y1)
     return {"statusCode":400, "path":finalPath}
 
 def agent2init():
@@ -275,11 +271,11 @@ def agent2init():
     print("SC: ",agent2_data["statusCode"], "STEPS: ", agent2_data["steps"])
     
 for i in range(1):
-    #tic = time.perf_counter()
+    tic = time.perf_counter()
     agent2init()
     print("=======================================================")
-    #toc = time.perf_counter()
-    #print("time: ",toc-tic)
+    toc = time.perf_counter()
+    print("time: ",toc-tic)
     print("=======================================================")
 
 

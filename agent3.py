@@ -344,9 +344,9 @@ def agent3init():
     print("SC: ",agent3_data["statusCode"], "STEPS: ", agent3_data["steps"])
     
 for i in range(1):
-    #tic = time.perf_counter()
+    tic = time.perf_counter()
     agent3init()
     print("=======================================================")
-    #toc = time.perf_counter()
-    #print("time: ",toc-tic)
+    toc = time.perf_counter()
+    print("time: ",toc-tic)
     print("=======================================================")
