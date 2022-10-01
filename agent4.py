@@ -181,6 +181,107 @@ def planBFS(grid, i, j, visited, size):
     # If the stack is empty and no path is found return statusCode 400.
     return {"statusCode":400, "path":s}
 
+def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
+    """_summary_
+        Simulate all possible paths for the agent to move to find out the most feasible path with the highest survival rate
+    Args:
+        grid (2D List): _description_The maze with blocked and unblocked cells along with the ghost spawns
+        size (int): Shape of the maze
+        ghostGrid (list): list of ghost positions on the maze
+        prevPosition (list): Stores the data of the cell being occupied by the ghost whether it is blocked or not
+        startX (int): X Coordinate
+        startY (int): Y Coordinate
+
+    Returns: Final Path from start to goal
+        _type_: Json
+    """
+    # Stores indices of the location of the maze cells
+    #visited = np.array([[False]*size]*size)
+    #childRow = [-1, 0, 1, 0]
+    #childCol = [0, 1, 0 ,-1]
+    
+    #goalQ.append(grid[goalX, goalY])
+    visited=[[True]*size for _ in range(size)]
+    dictBFS = planBFS(grid, startX, startY, visited, size = size)
+    statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
+    path = cleanPath(path)
+    if len(path)>0:
+        pos = path[0]
+        x1, y1 = pos[0], pos[1]
+    else:
+        x1, y1 = 0, 0
+    finalPath = list()
+    route = 1
+    counter = 0
+    #print(grid)
+
+    # Iterate while the queue is not empty
+    while [x1,y1] not in ghostGrid and counter<500:
+        if grid[x1,y1] == 10:
+            return {"statusCode":200, "path":finalPath}
+        
+        #BFS PLAN
+        visited=[[True]*size for _ in range(size)]
+        ghostNeighbor = list()
+        for ghost in ghostGrid:
+            x,y = ghost[0],ghost[1]
+            if isValid(x+1,y, size, grid):
+                ghostNeighbor.append([x+1,y])
+                grid[x+1,y] = -1
+            elif isValid(x-1,y, size, grid):
+                ghostNeighbor.append([x-1,y])
+                grid[x-1,y] = -1
+            elif isValid(x,y+1, size, grid):
+                ghostNeighbor.append([x,y+1])
+                grid[x,y+1] = -1
+            elif isValid(x,y-1, size, grid):
+                ghostNeighbor.append([x,y-1])
+                grid[x,y-1] = -1 
+                
+        for ghost in ghostGrid:
+            if ghost in path:
+                dictBFS = planBFS(grid, x1, y1, visited, size = size)
+                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
+                print("len(path)= ",len(path))
+                route = 1
+                
+        for cell in ghostNeighbor:
+            grid[cell[0],cell[1]] = 0
+        
+
+        #AGENT MOVE
+        if statusCode == 200:
+            path = cleanPath(path)
+            # for item in path:
+            #     print(item["x"], item["y"])
+            print("route: ", route)
+            pos = path[route]
+            x1, y1 = pos[0], pos[1]
+            finalPath.append([x1,y1])
+            route += 1
+            
+        elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
+            
+            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
+            
+            finalPath.append([x1,y1])
+            
+        #GHOST MOVE
+        grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+        counter += 1
+        # if counter%30==0:
+        #     print("counter:",counter)
+        #     print("Ghost: ", ghostGrid)
+        #     print("Agent: ", x1,y1)
+        #     print("==================================")
+        
+    # print("counter:",counter)
+    # print("Ghost: ", ghostGrid)
+    # print("Agent: ", x1,y1)
+    return {"statusCode":400, "path":finalPath}
+
+
+
 
 def executeBFS(grid, size, ghostGrid, prevPosition):
     """_summary_
@@ -200,7 +301,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     # Directions to move
     agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
     simulationCount = 5
-    while(counter<500 and [x1,y1] not in ghostGrid):
+    while(counter<900 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":finalPath}
 
@@ -250,102 +351,19 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     # print("Agent: ", x1,y1)
     return {"statusCode":400, "path":finalPath}
 
-
-
-
-
-def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
-    """_summary_
-        Simulate all possible paths for the agent to move to find out the most feasible path with the highest survival rate
-    Args:
-        grid (2D List): _description_The maze with blocked and unblocked cells along with the ghost spawns
-        size (int): Shape of the maze
-        ghostGrid (list): list of ghost positions on the maze
-        prevPosition (list): Stores the data of the cell being occupied by the ghost whether it is blocked or not
-        startX (int): X Coordinate
-        startY (int): Y Coordinate
-
-    Returns: Final Path from start to goal
-        _type_: Json
-    """
-    # Stores indices of the location of the maze cells
-    #visited = np.array([[False]*size]*size)
-    #childRow = [-1, 0, 1, 0]
-    #childCol = [0, 1, 0 ,-1]
-    
-    #goalQ.append(grid[goalX, goalY])
-    visited=[[True]*size for _ in range(size)]
-    dictBFS = planBFS(grid, startX, startY, visited, size = size)
-    statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-    path = cleanPath(path)
-    if len(path)>0:
-        pos = path[0]
-        x1, y1 = pos[0], pos[1]
-    else:
-        x1, y1 = 0, 0
-    finalPath = list()
-    route = 1
-    counter = 0
-    #print(grid)
-
-    # Iterate while the queue is not empty
-    while [x1,y1] not in ghostGrid and counter<500:
-        if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
-        
-        #BFS PLAN
-        visited=[[True]*size for _ in range(size)]
-        for ghost in ghostGrid:
-            if ghost in path:
-                dictBFS = planBFS(grid, x1, y1, visited, size = size)
-                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-                route = 1
-        
-
-        #AGENT MOVE
-        if statusCode == 200:
-            path = cleanPath(path)
-            # for item in path:
-            #     print(item["x"], item["y"])
-            pos = path[route]
-            x1, y1 = pos[0], pos[1]
-            finalPath.append([x1,y1])
-            route += 1
-            
-        elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
-            
-            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-            
-            finalPath.append([x1,y1])
-            
-        #GHOST MOVE
-        grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
-        counter += 1
-        # if counter%30==0:
-        #     print("counter:",counter)
-        #     print("Ghost: ", ghostGrid)
-        #     print("Agent: ", x1,y1)
-        #     print("==================================")
-        
-    # print("counter:",counter)
-    # print("Ghost: ", ghostGrid)
-    # print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":finalPath}
-
-
-def agent3init():
+def agent4init():
     """_summary_
         Initializer Function for the Agent3
     """
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts=1)
     print(grid)
-    agent3_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent3_data["steps"] = len(agent3_data["path"])
-    print("SC: ",agent3_data["statusCode"], "STEPS: ", agent3_data["steps"])
+    agent4_data = executeBFS(grid, size, ghostGrid, prevPosition)
+    agent4_data["steps"] = len(agent4_data["path"])
+    print("SC: ",agent4_data["statusCode"], "STEPS: ", agent4_data["steps"])
     
 for i in range(1):
     tic = time.perf_counter()
-    agent3init()
+    agent4init()
     print("=======================================================")
     toc = time.perf_counter()
     print("time: ",toc-tic)
