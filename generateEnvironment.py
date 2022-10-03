@@ -4,7 +4,7 @@ from collections import deque
 import time
 
 size = 51
-def generateMap(size = 51):
+def generateMap(size):
     """_summary_
         Generate the size=51x51 block grid with 72% unblocked and 28% blocked cells
     Args:
@@ -52,7 +52,7 @@ def isValid(a, b, size, visited, grid):
     #Otherwise
     return True
 
-def BFS(grid, size = 51):
+def DFS(grid, size = 51):
     """_summary_
         Performing Breadth First Search to reach to the goal block location
     Args:
@@ -78,7 +78,7 @@ def BFS(grid, size = 51):
     
     # Iterate while the queue is not empty
     while startQ:
-        x1,y1 = startQ.popleft()
+        x1,y1 = startQ.pop()
         path.append([x1,y1])
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":path}
@@ -102,15 +102,15 @@ def genWorld():
     """
     world = list()
     failedWorld = list()
-    noOfGrids = 5
+    noOfGrids = 7
     for i in range(noOfGrids):
         temp = {}
         grid = generateMap(size=size)["grid"]
-        if BFS(grid, size=size)["statusCode"] == 200:
+        if DFS(grid, size=size)["statusCode"] == 200:
             temp["grid"] = grid
-            temp["BFS"] = BFS(grid, size=size)
+            temp["BFS"] = DFS(grid, size=size)
             world.append(temp)
-        elif BFS(grid, size=size)["statusCode"] == 400:
+        elif DFS(grid, size=size)["statusCode"] == 400:
             failedWorld.append(grid)
     return world, size
 

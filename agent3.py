@@ -4,6 +4,8 @@ from collections import deque
 import numpy as np
 import time
 import copy
+import pandas as pd
+from openpyxl import load_workbook
 
 def cleanPath(path):
     """_summary_
@@ -104,82 +106,43 @@ def measureDist(x1, y1, grid, ghostGrid, size):
     return x1, y1
 
 
-def planBFS(grid, i, j, visited, size):
+def planDFS(grid,startX, startY, size):
     """_summary_
-        Run the BFS to find a path from agent to goal to plan if the survival is possible
+        Performing Breadth First Search to reach to the goal block location
     Args:
-        grid (2D List): _description_The maze with blocked and unblocked cells along with the ghost spawns
-        i (int): X coordinate
-        j (int): Y coordinate
-        visited (list): List of visited locations
-        size (int): Size of the maze
+        grid (2D List): The different combinations of 51x51 square matrix/maze generated
+        size (int, optional): Order of the matrix/maze used. Defaults to 51.
 
-    Returns:
-        _type_: Json
+    Returns: StatusCode if there is a successful way for the agent to reach its goal/ bottom-right node
+        _type_: json
     """
-    # Initially starting at (0, 0).
-    s=[]
+    # Stores indices of the location of the maze cells
+    visited = {"00":True}
+    childRow = [-1, 0, 1, 0]
+    childCol = [0, 1, 0 ,-1]
     
-    temp = {
-        "x":i,
-        "y":j,
-        "dirn":0
-    }    
-    s.append(temp)
-    while s:
-        # Pop the top node and move to the left, right, top, down or retract back according the value of node's dirn variable.
-        temp = s.pop()
-        d = temp["dirn"]
-        i = temp["x"]; j = temp["y"]
-        # Increment the direction and push the node in the stack again.
-        temp["dirn"] += 1
-        s.append(temp)
-        # If we reach the goal state return the final path
-        if (grid[i,j] == 10):
-            path = list()
-            for dict in s:
-                path.append([dict["x"],dict["y"]])
-                
+    startQ = deque()
+    path = list()
+    
+    # Mark the starting cell as visited and push it into the goal queue
+    startQ.append([startX,startY])
+    
+    # Iterate while the queue is not empty
+    while startQ:
+        x1,y1 = startQ.pop()
+        path.append([x1,y1])
+        if grid[x1,y1] == 10:
             return {"statusCode":200, "path":path}
-        # Checking the Up direction.
-        if (d == 0):
-            if (isValid(i-1, j, size, grid) and visited[i - 1][j]):
-                temp1={ "x":i-1,
-                        "y":j,
-                        "dirn":0}
+        # Go to the adjacent blocks on the maze
+        for i in range(4):
+            childX = x1 + childRow[i]
+            childY = y1 + childCol[i]
+            if isValid(childX, childY, size, grid) and not visited.get(str(childX)+str(childY), False):
+                startQ.append([childX, childY])
+                visited[str(childX)+str(childY)] = True
                 
-                visited[i - 1][j] = False
-                s.append(temp1)
-        # Checking the left direction
-        elif (d == 1):
-            if(isValid(i, j-1, size, grid) and visited[i][j - 1]):
-                temp1={ "x":i,
-                        "y":j-1,
-                        "dirn":0}
-                visited[i][j - 1] = False
-                s.append(temp1)
-        # Checking the down direction
-        elif (d == 2):
-            if(isValid(i+1, j, size, grid) and visited[i + 1][j]):
-                temp1={ "x":i+1,
-                        "y":j,
-                        "dirn":0}
-                visited[i + 1][j] = False
-                s.append(temp1)
-        # Checking the right direction
-        elif (d == 3):
-            if (isValid(i, j+1, size, grid) and visited[i][j + 1]):
-                temp1={ "x":i,
-                        "y":j+1,
-                        "dirn":0}
-                visited[i][j + 1] = False
-                s.append(temp1)
-        # If none of the direction can take the agent to the goal, retract back to the last step.
-        else:
-            visited[temp["x"]][temp["y"]] = True
-            s.pop()
-    # If the stack is empty and no path is found return statusCode 400.
-    return {"statusCode":400, "path":s}
+                
+    return {"statusCode": 400, "path":path}
 
 
 def executeBFS(grid, size, ghostGrid, prevPosition):
@@ -274,8 +237,7 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     #childCol = [0, 1, 0 ,-1]
     
     #goalQ.append(grid[goalX, goalY])
-    visited=[[True]*size for _ in range(size)]
-    dictBFS = planBFS(grid, startX, startY, visited, size = size)
+    dictBFS = planDFS(grid, startX, startY, size = size)
     statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
     path = cleanPath(path)
     if len(path)>0:
@@ -294,10 +256,9 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
             return {"statusCode":200, "path":finalPath}
         
         #BFS PLAN
-        visited=[[True]*size for _ in range(size)]
         for ghost in ghostGrid:
             if ghost in path:
-                dictBFS = planBFS(grid, x1, y1, visited, size = size)
+                dictBFS = planDFS(grid, x1, y1, size = size)
                 statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
                 route = 1
         
@@ -333,20 +294,41 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     return {"statusCode":400, "path":finalPath}
 
 
-def agent3init():
+def agent3init(noOfGhosts):
     """_summary_
         Initializer Function for the Agent3
     """
-    ghostGrid, grid, prevPosition, size = initializer(noOfGhosts=1)
-    print(grid)
+    ghostGrid, grid, prevPosition, size = initializer(noOfGhosts)
     agent3_data = executeBFS(grid, size, ghostGrid, prevPosition)
     agent3_data["steps"] = len(agent3_data["path"])
-    print("SC: ",agent3_data["statusCode"], "STEPS: ", agent3_data["steps"])
+    data = dict()
+    data["StatusCode"] = agent3_data["statusCode"]
+    data["Steps"] = agent3_data["steps"]
+    return data
     
-for i in range(1):
-    tic = time.perf_counter()
-    agent3init()
-    print("=======================================================")
-    toc = time.perf_counter()
-    print("time: ",toc-tic)
-    print("=======================================================")
+def dataCollection():
+    noOfGhosts = 9
+    final_data = list()
+    for i in range(1,41):
+        tic = time.perf_counter()
+        data = agent3init(noOfGhosts)
+        toc = time.perf_counter()
+        data["time"] = str(toc-tic)
+        data["GhostCount"] = noOfGhosts
+        final_data.append(data)
+        if i%5==0:
+            noOfGhosts += 1
+            print("noOfGhosts: ", noOfGhosts)
+            
+    df1 = pd.DataFrame(final_data)
+    book = load_workbook('Agent3.xlsx')
+    writer = pd.ExcelWriter('Agent3.xlsx', engine='openpyxl')
+    writer.book = book
+    writer.sheets = {ws.title: ws for ws in book.worksheets}
+
+    for sheetname in writer.sheets:
+        df1.to_excel(writer,sheet_name=sheetname, startrow=writer.sheets[sheetname].max_row, index = False, header = False)
+
+    writer.save()
+        
+dataCollection()
