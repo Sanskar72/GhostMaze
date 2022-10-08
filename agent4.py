@@ -177,7 +177,7 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     #print(grid)
 
     # Iterate while the queue is not empty
-    while [x1,y1] not in ghostGrid and counter<500:
+    while [x1,y1] not in ghostGrid and counter<3000:
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":finalPath}
         
@@ -263,7 +263,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     # Directions to move
     agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
     simulationCount = 5
-    while(counter<900 and [x1,y1] not in ghostGrid):
+    while(counter<3000 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":finalPath}
 

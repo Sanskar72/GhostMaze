@@ -15,8 +15,8 @@ def createGhost(size):
     Returns:
         _type_: Int values for indices of the ghost
     """
-    ghostX = random.randrange(2, size-1)
-    ghostY = random.randrange(2, size-1)
+    ghostX = random.randrange(3, 48)
+    ghostY = random.randrange(3, 48)
     return ghostX, ghostY
 
 

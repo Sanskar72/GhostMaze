@@ -135,12 +135,15 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     # Iterate while the queue is not empty
     while [x1,y1] not in ghostGrid and counter<2500:
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":path}
+            return {"statusCode":200, "path":path, "counter":counter}
         
         #AGENT MOVE
         pos = path[route]
         x1, y1 = pos[0], pos[1]
         route += 1
+        
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "path":path, "counter":counter}
         
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
         counter += 1
@@ -152,7 +155,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     print("counter:",counter)
     print("Ghost: ", ghostGrid)
     print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":path}
+    return {"statusCode":400, "path":path, "counter":counter}
 
 def agent1init(noOfGhosts):
     """_summary_
@@ -160,23 +163,23 @@ def agent1init(noOfGhosts):
     """
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts)
     agent1_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent1_data["steps"] = len(agent1_data["path"])
     data = dict()
     data["StatusCode"] = agent1_data["statusCode"]
-    data["Steps"] = agent1_data["steps"]
+    data["Steps"] = agent1_data["counter"]
+    
     return data
 
 def dataCollection():
-    noOfGhosts = 1
+    noOfGhosts =46
     final_data = list()
-    for i in range(1,41):
+    for i in range(1,51):
         tic = time.perf_counter()
         data = agent1init(noOfGhosts)
         toc = time.perf_counter()
         data["time"] = str(toc-tic)
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
-        if i%5==0:
+        if i%10==0:
             noOfGhosts += 1
             print("noOfGhosts: ", noOfGhosts)
             

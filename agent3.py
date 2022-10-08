@@ -105,6 +105,25 @@ def measureDist(x1, y1, grid, ghostGrid, size):
     
     return x1, y1
 
+def closestGhostDist(x1, y1, ghostGrid):
+    """_summary_
+
+    Args:
+        x1 (_type_): _description_
+        y1 (_type_): _description_
+        ghostGrid (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    dist = list()
+    for ghost in ghostGrid:
+        # Euclidean Distance
+        dist.append(np.sqrt((ghost[0]-x1)**2 + (ghost[1]-y1)**2))
+        
+    dist = np.min(dist)
+    return dist
+
 
 def planDFS(grid,startX, startY, size):
     """_summary_
@@ -159,13 +178,15 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     """
     x1, y1 = 0, 0
     counter = 0
+    safePath = 0
+    riskyPath = 0
     finalPath = [[0,0]]
     # Directions to move
     agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
-    simulationCount = 5
-    while(counter<500 and [x1,y1] not in ghostGrid):
+    simulationCount = 7
+    while(counter<3000 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
+            return {"statusCode":200, "path":finalPath, "counter":counter, "safeSimulation": safePath, "riskySimulation":riskyPath}
 
         #START SIMULATION FOR FUTURE PREDICTION
         finalDict = {"survivalCount": 0, "nextStep": [x1,y1]}
@@ -173,11 +194,12 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
             tempX, tempY = x1+agentMove[ind][0], y1+agentMove[ind][1]
             if isValid(tempX, tempY, size, grid):
                 survivalCount = 0
-                for i in range(simulationCount):
+                for _ in range(simulationCount):
                     tempGrid = copy.deepcopy(grid)
                     tempGhostGrid = copy.deepcopy(ghostGrid)
                     tempPrevPosition = copy.deepcopy(prevPosition)
                     simulBFS = simulateBFS(tempGrid, size, tempGhostGrid, tempPrevPosition, tempX, tempY)
+                    #print("Index: ",ind,">>>simulDFS: ",simulBFS)
                     if simulBFS["statusCode"] == 200:
                         survivalCount += 1
 
@@ -187,15 +209,20 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
                     finalDict["nextStep"] = [tempX, tempY]
                 
                 print("counter=",counter,"//nextStep=",tempX,",",tempY,"//survivalCount=",survivalCount)
-                if finalDict["survivalCount"] == simulationCount:
+                if finalDict["survivalCount"] >= simulationCount-1:
+                    safePath += 1
                     break
 
 
         if finalDict["survivalCount"]>1:        
             x1, y1 = finalDict["nextStep"][0], finalDict["nextStep"][1]
-        else:
+        else:#MOVE AWAY FROM CLOSEST GHOSTS
+            riskyPath += 1
             x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
         finalPath.append([x1,y1])
+        
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "path":finalPath, "counter":counter, "safeSimulation": safePath, "riskySimulation":riskyPath}
 
         #MOVE GHOSTS
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
@@ -204,14 +231,14 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
         
         print("counter:",counter)
         print("Ghost: ", ghostGrid)
-        print("Agent: ", x1,y1)
+        print("finalDict: ", finalDict)
         print("===================================")
 
     # print("===================================")
     # print("counter:",counter)
     # print("Ghost: ", ghostGrid)
     # print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":finalPath}
+    return {"statusCode":400, "path":finalPath, "counter":counter, "safeSimulation": safePath, "riskySimulation":riskyPath}
 
 
 
@@ -248,19 +275,29 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     finalPath = list()
     route = 1
     counter = 0
+    replan = 0
     #print(grid)
 
     # Iterate while the queue is not empty
-    while [x1,y1] not in ghostGrid and counter<500:
+    while [x1,y1] not in ghostGrid and counter<3000:
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
+            return {"statusCode":200, "counter":counter, "replanCount":replan}
         
         #BFS PLAN
-        for ghost in ghostGrid:
-            if ghost in path:
-                dictBFS = planDFS(grid, x1, y1, size = size)
-                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-                route = 1
+        if closestGhostDist(x1, y1, ghostGrid)<3:
+            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
+            finalPath.append([x1,y1])
+            dictBFS = planDFS(grid, x1, y1, size = size)
+            statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
+            replan += 1
+            route = 1
+            grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+            counter += 1
+            # print("counter:",counter)
+            # print("Ghost: ", ghostGrid)
+            # print("Agent: ", x1,y1)
+            # print("===============close called===================")
+            continue
         
 
         #AGENT MOVE
@@ -274,10 +311,11 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
             route += 1
             
         elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
-            
             x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-            
             finalPath.append([x1,y1])
+        
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "counter":counter, "replanCount":replan}
             
         #GHOST MOVE
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
@@ -291,7 +329,7 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     # print("counter:",counter)
     # print("Ghost: ", ghostGrid)
     # print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":finalPath}
+    return {"statusCode":400, "counter":counter, "replanCount":replan}
 
 
 def agent3init(noOfGhosts):
@@ -300,24 +338,25 @@ def agent3init(noOfGhosts):
     """
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts)
     agent3_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent3_data["steps"] = len(agent3_data["path"])
     data = dict()
     data["StatusCode"] = agent3_data["statusCode"]
-    data["Steps"] = agent3_data["steps"]
+    data["Steps"] = agent3_data["counter"]
+    data["safeSimulation"] = agent3_data["safeSimulation"]
+    data["riskySimulation"] = agent3_data["riskySimulation"]
     return data
     
 def dataCollection():
-    noOfGhosts = 9
+    noOfGhosts = 5
     final_data = list()
-    for i in range(1,41):
+    for i in range(1,2):
         tic = time.perf_counter()
         data = agent3init(noOfGhosts)
         toc = time.perf_counter()
         data["time"] = str(toc-tic)
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
-        if i%5==0:
-            noOfGhosts += 1
+        if i%10==0:
+            #noOfGhosts += 5
             print("noOfGhosts: ", noOfGhosts)
             
     df1 = pd.DataFrame(final_data)

@@ -104,6 +104,25 @@ def measureDist(x1, y1, grid, ghostGrid, size):
             
     return x1, y1
 
+def closestGhostDist(x1, y1, ghostGrid):
+    """_summary_
+
+    Args:
+        x1 (_type_): _description_
+        y1 (_type_): _description_
+        ghostGrid (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    dist = list()
+    for ghost in ghostGrid:
+        # Euclidean Distance
+        dist.append(np.sqrt((ghost[0]-x1)**2 + (ghost[1]-y1)**2))
+        
+    dist = np.min(dist)
+    return dist
+
 def planDFS(grid,startX, startY, size):
     """_summary_
         Performing Breadth First Search to reach to the goal block location
@@ -172,18 +191,28 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     finalPath = list()
     route = 1
     counter = 0
+    replan = 0
 
     # Iterate while the queue is not empty
     while [x1,y1] not in ghostGrid and counter<3000:
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
+            return {"statusCode":200, "path":finalPath, "counter":counter, "replanCount":replan}
         
         #BFS PLAN
-        for ghost in ghostGrid:
-            if ghost in path:
-                dictBFS = planDFS(grid, x1, y1, size = size)
-                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-                route = 1
+        if closestGhostDist(x1, y1, ghostGrid)<3:
+            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
+            finalPath.append([x1,y1])
+            dictBFS = planDFS(grid, x1, y1, size = size)
+            statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
+            replan += 1
+            route = 1
+            grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+            counter += 1
+            # print("counter:",counter)
+            # print("Ghost: ", ghostGrid)
+            # print("Agent: ", x1,y1)
+            # print("===============close called===================")
+            continue
         
 
         #AGENT MOVE
@@ -196,20 +225,12 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
             finalPath.append([x1,y1])
             route += 1
             
-        elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
-            # #IF DIST FROM GHOST<THRESHOLD, MOVE AGENT.
-            # if isValid(x1-1, y1, size, grid):
-            #     x1 -= 1
-            # elif isValid(x1, y1-1, size, grid):
-            #     y1 -= 1
-            # elif isValid(x1+1, y1, size, grid):
-            #     x1 += 1
-            # elif isValid(x1, y1+1, size, grid):
-            #     y1 += 1
-            
+        elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST            
             x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-            
             finalPath.append([x1,y1])
+            
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "path":finalPath, "counter":counter, "replanCount":replan}
             
         #GHOST MOVE
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
@@ -219,32 +240,33 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
         # print("Agent: ", x1,y1)
         # print("==================================")
         
-    return {"statusCode":400, "path":finalPath}
+    return {"statusCode":400, "path":finalPath, "counter":counter, "replanCount":replan}
 
 def agent2init(noOfGhosts):
     """_summary_
         Initializer Function for the Agent2
     """
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts)
+    #print(grid)
     agent2_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent2_data["steps"] = len(agent2_data["path"])
     data = dict()
     data["StatusCode"] = agent2_data["statusCode"]
-    data["Steps"] = agent2_data["steps"]
+    data["replanCount"] = agent2_data["replanCount"]
+    data["counter"] = agent2_data["counter"]
     return data
     
 def dataCollection():
-    noOfGhosts = 9
+    noOfGhosts = 5
     final_data = list()
-    for i in range(1,41):
+    for i in range(1,51):
         tic = time.perf_counter()
         data = agent2init(noOfGhosts)
         toc = time.perf_counter()
         data["time"] = str(toc-tic)
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
-        if i%5==0:
-            noOfGhosts += 1
+        if i%10==0:
+            noOfGhosts += 5
             print("noOfGhosts: ", noOfGhosts)
             
     df1 = pd.DataFrame(final_data)
