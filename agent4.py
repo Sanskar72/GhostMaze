@@ -57,7 +57,7 @@ def isValid(a, b, size, grid):
     if (a < 0 or a > size-1) or (b < 0 or b > size-1):
         return False
 
-    # If the cell is already visited
+    # If the cell is blocked
     if grid[a, b] == -1:
         return False
     
