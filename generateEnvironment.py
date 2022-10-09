@@ -79,9 +79,8 @@ def DFS(grid, size = 51):
     # Iterate while the queue is not empty
     while startQ:
         x1,y1 = startQ.pop()
-        path.append([x1,y1])
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":path}
+            return {"statusCode":200}
         # Go to the adjacent blocks on the maze
         for i in range(4):
             childX = x1 + childRow[i]
@@ -90,7 +89,7 @@ def DFS(grid, size = 51):
                 startQ.append([childX, childY])  
                 visited[childX, childY] = True
                 
-    return {"statusCode": 400, "path":"route DNE"}
+    return {"statusCode": 400}
 
 
 
@@ -101,7 +100,6 @@ def genWorld():
         _type_: List of 2-D Arrays
     """
     world = list()
-    failedWorld = list()
     noOfGrids = 7
     for i in range(noOfGrids):
         temp = {}
@@ -110,19 +108,6 @@ def genWorld():
             temp["grid"] = grid
             temp["BFS"] = DFS(grid, size=size)
             world.append(temp)
-        elif DFS(grid, size=size)["statusCode"] == 400:
-            failedWorld.append(grid)
     return world, size
 
 
-# #Driver Code
-# tic = time.perf_counter()       
-# world, size = genWorld()
-# c200 = 0
-# for env in world:
-#     if env["BFS"]["statusCode"] == 200:
-#         c200 += 1
-        
-# print("200:", c200)
-# toc = time.perf_counter()
-# print(toc-tic)

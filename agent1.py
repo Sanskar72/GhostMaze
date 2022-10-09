@@ -64,7 +64,7 @@ def isValid(a, b, size, grid):
     return True
 
 
-def planDFS(grid,startX, startY, size):
+def planDFS(grid, startX, startY, size):
     """_summary_
         Performing Breadth First Search to reach to the goal block location
     Args:
@@ -83,12 +83,12 @@ def planDFS(grid,startX, startY, size):
     path = list()
     
     # Mark the starting cell as visited and push it into the goal queue
-    startQ.append([startX,startY])
+    startQ.append([[startX, startY]])
     
     # Iterate while the queue is not empty
     while startQ:
-        x1,y1 = startQ.pop()
-        path.append([x1,y1])
+        path = startQ.popleft()
+        x1, y1 = path[-1]
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":path}
         # Go to the adjacent blocks on the maze
@@ -96,7 +96,9 @@ def planDFS(grid,startX, startY, size):
             childX = x1 + childRow[i]
             childY = y1 + childCol[i]
             if isValid(childX, childY, size, grid) and not visited.get(str(childX)+str(childY), False):
-                startQ.append([childX, childY])
+                newPath = list(path)
+                newPath.append([childX, childY])
+                startQ.append(newPath)
                 visited[str(childX)+str(childY)] = True
                 
                 
@@ -118,8 +120,6 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     #visited = np.array([[False]*size]*size)
     #childRow = [-1, 0, 1, 0]
     #childCol = [0, 1, 0 ,-1]
-    
-    #goalQ.append(grid[goalX, goalY])
     startX, startY = 0, 0
     dictBFS = planDFS(grid, startX, startY, size)
     statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
@@ -131,30 +131,22 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
         x1, y1 = 0, 0
     route = 1
     counter = 0
-
-    # Iterate while the queue is not empty
-    while [x1,y1] not in ghostGrid and counter<2500:
-        if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":path, "counter":counter}
-        
-        #AGENT MOVE
-        pos = path[route]
-        x1, y1 = pos[0], pos[1]
-        route += 1
-        
-        if [x1,y1] in ghostGrid:
-            return {"statusCode":400, "path":path, "counter":counter}
-        
-        grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
-        counter += 1
-        # if counter%100==0:
-        #     print("counter:",counter)
-        #     print("Ghost: ", ghostGrid)
-        #     print("Agent: ", x1,y1)
-        #     print("==================================")
-    print("counter:",counter)
-    print("Ghost: ", ghostGrid)
-    print("Agent: ", x1,y1)
+    if statusCode == 200:
+        # Iterate while the queue is not empty
+        while [x1,y1] not in ghostGrid and counter<2500:
+            if grid[x1,y1] == 10:
+                return {"statusCode":200, "path":path, "counter":counter}
+            
+            #AGENT MOVE
+            pos = path[route]
+            x1, y1 = pos[0], pos[1]
+            route += 1
+            
+            if [x1,y1] in ghostGrid:
+                return {"statusCode":400, "path":path, "counter":counter}
+            
+            grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+            counter += 1
     return {"statusCode":400, "path":path, "counter":counter}
 
 def agent1init(noOfGhosts):
@@ -170,9 +162,9 @@ def agent1init(noOfGhosts):
     return data
 
 def dataCollection():
-    noOfGhosts =46
+    noOfGhosts = 81
     final_data = list()
-    for i in range(1,51):
+    for i in range(1,101):
         tic = time.perf_counter()
         data = agent1init(noOfGhosts)
         toc = time.perf_counter()

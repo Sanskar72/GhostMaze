@@ -105,7 +105,7 @@ def measureDist(x1, y1, grid, ghostGrid, size):
     return x1, y1
 
 
-def planDFS(grid,startX, startY, size):
+def planDFS(grid, startX, startY, size):
     """_summary_
         Performing Breadth First Search to reach to the goal block location
     Args:
@@ -124,12 +124,12 @@ def planDFS(grid,startX, startY, size):
     path = list()
     
     # Mark the starting cell as visited and push it into the goal queue
-    startQ.append([startX,startY])
+    startQ.append([[startX, startY]])
     
     # Iterate while the queue is not empty
     while startQ:
-        x1,y1 = startQ.pop()
-        path.append([x1,y1])
+        path = startQ.popleft()
+        x1, y1 = path[-1]
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":path}
         # Go to the adjacent blocks on the maze
@@ -137,7 +137,9 @@ def planDFS(grid,startX, startY, size):
             childX = x1 + childRow[i]
             childY = y1 + childCol[i]
             if isValid(childX, childY, size, grid) and not visited.get(str(childX)+str(childY), False):
-                startQ.append([childX, childY])
+                newPath = list(path)
+                newPath.append([childX, childY])
+                startQ.append(newPath)
                 visited[str(childX)+str(childY)] = True
                 
                 

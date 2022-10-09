@@ -123,7 +123,7 @@ def closestGhostDist(x1, y1, ghostGrid):
     dist = np.min(dist)
     return dist
 
-def planDFS(grid,startX, startY, size):
+def planDFS(grid, startX, startY, size):
     """_summary_
         Performing Breadth First Search to reach to the goal block location
     Args:
@@ -142,12 +142,12 @@ def planDFS(grid,startX, startY, size):
     path = list()
     
     # Mark the starting cell as visited and push it into the goal queue
-    startQ.append([startX,startY])
+    startQ.append([[startX, startY]])
     
     # Iterate while the queue is not empty
     while startQ:
-        x1,y1 = startQ.pop()
-        path.append([x1,y1])
+        path = startQ.popleft()
+        x1, y1 = path[-1]
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":path}
         # Go to the adjacent blocks on the maze
@@ -155,7 +155,9 @@ def planDFS(grid,startX, startY, size):
             childX = x1 + childRow[i]
             childY = y1 + childCol[i]
             if isValid(childX, childY, size, grid) and not visited.get(str(childX)+str(childY), False):
-                startQ.append([childX, childY])
+                newPath = list(path)
+                newPath.append([childX, childY])
+                startQ.append(newPath)
                 visited[str(childX)+str(childY)] = True
                 
                 
@@ -182,7 +184,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     startX, startY = 0, 0
     dictBFS = planDFS(grid, startX, startY, size)
     statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-    path = cleanPath(path)
+    #path = cleanPath(path)
     if len(path)>0:
         pos = path[0]
         x1, y1 = pos[0], pos[1]
@@ -217,7 +219,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
 
         #AGENT MOVE
         if statusCode == 200:
-            path = cleanPath(path)
+            #path = cleanPath(path)
             # for item in path:
             #     print(item["x"], item["y"])
             pos = path[route]
@@ -256,9 +258,9 @@ def agent2init(noOfGhosts):
     return data
     
 def dataCollection():
-    noOfGhosts = 5
+    noOfGhosts = 91
     final_data = list()
-    for i in range(1,51):
+    for i in range(1,101):
         tic = time.perf_counter()
         data = agent2init(noOfGhosts)
         toc = time.perf_counter()
@@ -266,7 +268,7 @@ def dataCollection():
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
         if i%10==0:
-            noOfGhosts += 5
+            noOfGhosts += 1
             print("noOfGhosts: ", noOfGhosts)
             
     df1 = pd.DataFrame(final_data)
