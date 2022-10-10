@@ -5,6 +5,7 @@ import numpy as np
 import time
 import copy
 import pandas as pd
+from openpyxl import load_workbook
 
 def cleanPath(path):
     """_summary_
@@ -104,6 +105,25 @@ def measureDist(x1, y1, grid, ghostGrid, size):
     
     return x1, y1
 
+def closestGhostDist(x1, y1, ghostGrid):
+    """_summary_
+
+    Args:
+        x1 (_type_): _description_
+        y1 (_type_): _description_
+        ghostGrid (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    dist = list()
+    for ghost in ghostGrid:
+        # Euclidean Distance
+        dist.append(np.sqrt((ghost[0]-x1)**2 + (ghost[1]-y1)**2))
+        
+    dist = np.min(dist)
+    return dist
+
 
 def planDFS(grid, startX, startY, size):
     """_summary_
@@ -176,12 +196,14 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     finalPath = list()
     route = 1
     counter = 0
+    replan = 0
+    closeGhost = 0
     #print(grid)
 
     # Iterate while the queue is not empty
     while [x1,y1] not in ghostGrid and counter<3000:
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
+            return {"statusCode":200, "counter":counter, "replanCount":replan, "closeGhost":closeGhost}
         
         #BFS PLAN
         ghostNeighbor = list()
@@ -200,11 +222,21 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
                 ghostNeighbor.append([x,y-1])
                 grid[x,y-1] = -1 
                 
-        for ghost in ghostGrid:
-            if ghost in path:
-                dictBFS = planDFS(grid, x1, y1, size = size)
-                statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-                route = 1
+        if closestGhostDist(x1, y1, ghostGrid)<2:
+            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
+            finalPath.append([x1,y1])
+            dictBFS = planDFS(grid, x1, y1, size = size)
+            statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
+            replan += 1
+            route = 1
+            closeGhost += 1
+            grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+            counter += 1
+            # print("counter:",counter)
+            # print("Ghost: ", ghostGrid)
+            # print("Agent: ", x1,y1)
+            # print("===============close called===================")
+            continue
                 
         for cell in ghostNeighbor:
             grid[cell[0],cell[1]] = 0
@@ -212,37 +244,30 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
 
         #AGENT MOVE
         if statusCode == 200:
-            path = cleanPath(path)
+            #path = cleanPath(path)
             # for item in path:
             #     print(item["x"], item["y"])
-            if len(path)>=1:
-                pos = path[route]
-                x1, y1 = pos[0], pos[1]
-                finalPath.append([x1,y1])
-                route += 1
-            else:
-                pos = path[0]
+            pos = path[route]
+            x1, y1 = pos[0], pos[1]
+            finalPath.append([x1,y1])
+            route += 1
                 
             
         elif statusCode == 400: #MOVE AGENT AWAY FROM CLOSEST GHOST
-            
             x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-            
             finalPath.append([x1,y1])
+            
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "counter":counter, "replanCount":replan, "closeGhost":closeGhost}
             
         #GHOST MOVE
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
         counter += 1
-        if counter%30==0:
-            print("counter:",counter)
-            print("Ghost: ", ghostGrid)
-            print("Agent: ", x1,y1)
-            print("==================================")
         
     # print("counter:",counter)
     # print("Ghost: ", ghostGrid)
     # print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":finalPath}
+    return {"statusCode":400, "counter":counter, "replanCount":replan, "closeGhost":closeGhost}
 
 
 
@@ -261,59 +286,76 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     """
     x1, y1 = 0, 0
     counter = 0
+    closeGhost = 0
+    metricConst = 2
     finalPath = [[0,0]]
     # Directions to move
     agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
     simulationCount = 5
-    while(counter<3000 and [x1,y1] not in ghostGrid):
+    while(counter<1500 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath}
+            return {"statusCode":200, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
 
         #START SIMULATION FOR FUTURE PREDICTION
-        finalDict = {"survivalCount": 0, "nextStep": [x1,y1]}
+        dir_dict = list()
         for ind in range(4):
             tempX, tempY = x1+agentMove[ind][0], y1+agentMove[ind][1]
             if isValid(tempX, tempY, size, grid):
-                survivalCount = 0
-                for i in range(simulationCount):
+                temp = dict()
+                temp["survivalCount"] = 0
+                temp["avgReplanCount"] = 1
+                temp["avgCloseGhost"] = 1
+                temp["avgSteps"] = 1
+                #"statusCode":200, "counter":counter, "replanCount":replan, "closeGhost":closeGhost
+                for _ in range(simulationCount):
                     tempGrid = copy.deepcopy(grid)
                     tempGhostGrid = copy.deepcopy(ghostGrid)
                     tempPrevPosition = copy.deepcopy(prevPosition)
                     simulBFS = simulateBFS(tempGrid, size, tempGhostGrid, tempPrevPosition, tempX, tempY)
                     if simulBFS["statusCode"] == 200:
-                        survivalCount += 1
-
-                
-                if survivalCount>finalDict["survivalCount"]:
-                    finalDict["survivalCount"] = survivalCount
-                    finalDict["nextStep"] = [tempX, tempY]
-                
-                print("counter=",counter,"//nextStep=",tempX,",",tempY,"//survivalCount=",survivalCount)
-                if finalDict["survivalCount"] == simulationCount:
-                    break
-
-
-        if finalDict["survivalCount"]>1:        
-            x1, y1 = finalDict["nextStep"][0], finalDict["nextStep"][1]
-        else:
+                        temp["survivalCount"] += 1
+                        temp["avgReplanCount"] += simulBFS["replanCount"]
+                        temp["avgCloseGhost"] += simulBFS["closeGhost"]
+                        temp["avgSteps"] += simulBFS["counter"]
+                if temp["survivalCount"] > 0:
+                    temp["avgSteps"] /= temp["survivalCount"]
+                    temp["avgReplanCount"] /= temp["survivalCount"]
+                    temp["avgCloseGhost"] /= temp["survivalCount"]
+                    temp["nextStep"] = [tempX, tempY]
+                    temp["metric"] = (metricConst*simulationCount*temp["survivalCount"]) / (temp["avgReplanCount"]*temp["avgCloseGhost"]*temp["avgSteps"])
+                    dir_dict.append(temp)
+            else:
+                continue
+        
+        maxInd = -1
+        metric = -1
+        for i in range(len(dir_dict)) :
+            if dir_dict[i]["metric"] >= metric:
+                maxInd = i
+                metric = dir_dict[i]["metric"]
+        if maxInd != -1 and dir_dict[maxInd]["survivalCount"]>=2:        
+            x1, y1 = dir_dict[maxInd]["nextStep"][0], dir_dict[maxInd]["nextStep"][1]
+        else:#MOVE AWAY FROM CLOSEST GHOSTS
+            closeGhost += 1
             x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
         finalPath.append([x1,y1])
+        
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
 
         #MOVE GHOSTS
         grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
         counter += 1
-
-        if counter%100==0:
-            print("counter:",counter)
+        if counter%30 == 0:
+            print("STEP TAKEN>>>>>>>>>>>>>")
+            print("Agent: ",x1, y1)
             print("Ghost: ", ghostGrid)
-            print("Agent: ", x1,y1)
+            print("Counter: ", counter)
+            if maxInd != -1:
+                print(dir_dict[maxInd])
             print("===================================")
 
-    # print("===================================")
-    # print("counter:",counter)
-    # print("Ghost: ", ghostGrid)
-    # print("Agent: ", x1,y1)
-    return {"statusCode":400, "path":finalPath}
+    return {"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
 
 def agent4init(noOfGhosts):
     """_summary_
@@ -321,16 +363,17 @@ def agent4init(noOfGhosts):
     """
     ghostGrid, grid, prevPosition, size = initializer(noOfGhosts)
     agent4_data = executeBFS(grid, size, ghostGrid, prevPosition)
-    agent4_data["steps"] = len(agent4_data["path"])
     data = dict()
+    #"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost
     data["StatusCode"] = agent4_data["statusCode"]
-    data["Steps"] = agent4_data["steps"]
+    data["Steps"] = agent4_data["counter"]
+    data["closeGhostCount"] = agent4_data["closeGhostCount"]
     return data
     
 def dataCollection():
     noOfGhosts = 1
     final_data = list()
-    for i in range(1,21):
+    for i in range(1,6):
         tic = time.perf_counter()
         data = agent4init(noOfGhosts)
         toc = time.perf_counter()
@@ -338,10 +381,17 @@ def dataCollection():
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
         if i%5==0:
-            noOfGhosts += 3
+            noOfGhosts += 1
             
     df1 = pd.DataFrame(final_data)
-    with pd.ExcelWriter('Agent4.xlsx') as writer:
-        df1.to_excel(writer, sheet_name = 'Agent4')
+    book = load_workbook('Agent4.xlsx')
+    writer = pd.ExcelWriter('Agent4.xlsx', engine='openpyxl')
+    writer.book = book
+    writer.sheets = {ws.title: ws for ws in book.worksheets}
+
+    for sheetname in writer.sheets:
+        df1.to_excel(writer,sheet_name=sheetname, startrow=writer.sheets[sheetname].max_row, index = False, header = False)
+
+    writer.save()
         
 dataCollection()

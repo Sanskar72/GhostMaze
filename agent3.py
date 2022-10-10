@@ -166,92 +166,6 @@ def planDFS(grid, startX, startY, size):
     return {"statusCode": 400, "path":path}
 
 
-def executeBFS(grid, size, ghostGrid, prevPosition):
-    """_summary_
-        Implement the path returned by the plan BFS Function
-    Args:
-        grid (2D List): _description_The maze with blocked and unblocked cells along with the ghost spawns
-        size (int): Shape of the maze
-        ghostGrid (list): list of ghost positions on the maze
-        prevPosition (list): Stores the data of the cell being occupied by the ghost whether it is blocked or not
-
-    Returns: The path followed by the agent towards the goal
-        _type_: list
-    """
-    x1, y1 = 0, 0
-    counter = 0
-    closeGhost = 0
-    finalPath = [[0,0]]
-    # Directions to move
-    agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
-    simulationCount = 5
-    while(counter<1500 and [x1,y1] not in ghostGrid):
-        if grid[x1,y1] == 10:
-            return {"statusCode":200, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
-
-        #START SIMULATION FOR FUTURE PREDICTION
-        dir_dict = list()
-        for ind in range(4):
-            tempX, tempY = x1+agentMove[ind][0], y1+agentMove[ind][1]
-            if isValid(tempX, tempY, size, grid):
-                temp = dict()
-                temp["survivalCount"] = 0
-                temp["avgReplanCount"] = 1
-                temp["avgCloseGhost"] = 1
-                temp["avgSteps"] = 1
-                #"statusCode":200, "counter":counter, "replanCount":replan, "closeGhost":closeGhost
-                for _ in range(simulationCount):
-                    tempGrid = copy.deepcopy(grid)
-                    tempGhostGrid = copy.deepcopy(ghostGrid)
-                    tempPrevPosition = copy.deepcopy(prevPosition)
-                    simulBFS = simulateBFS(tempGrid, size, tempGhostGrid, tempPrevPosition, tempX, tempY)
-                    if simulBFS["statusCode"] == 200:
-                        temp["survivalCount"] += 1
-                        temp["avgReplanCount"] += simulBFS["replanCount"]
-                        temp["avgCloseGhost"] += simulBFS["closeGhost"]
-                        temp["avgSteps"] += simulBFS["counter"]
-                if temp["survivalCount"] > 0:
-                    temp["avgSteps"] /= temp["survivalCount"]
-                    temp["avgReplanCount"] /= temp["survivalCount"]
-                    temp["avgCloseGhost"] /= temp["survivalCount"]
-                    temp["nextStep"] = [tempX, tempY]
-                    temp["metric"] = (3*simulationCount*temp["survivalCount"]) / (temp["avgReplanCount"]*temp["avgCloseGhost"]*temp["avgSteps"])
-                    dir_dict.append(temp)
-            else:
-                continue
-        
-        maxInd = -1
-        metric = -1
-        for i in range(len(dir_dict)) :
-            if dir_dict[i]["metric"] >= metric:
-                maxInd = i
-                metric = dir_dict[i]["metric"]
-        if maxInd != -1 and dir_dict[maxInd]["survivalCount"]>=2:        
-            x1, y1 = dir_dict[maxInd]["nextStep"][0], dir_dict[maxInd]["nextStep"][1]
-        else:#MOVE AWAY FROM CLOSEST GHOSTS
-            closeGhost += 1
-            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
-        finalPath.append([x1,y1])
-        
-        if [x1,y1] in ghostGrid:
-            return {"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
-
-        #MOVE GHOSTS
-        grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
-        counter += 1
-        print("STEP TAKEN>>>>>>>>>>>>>")
-        print("Agent: ",x1, y1)
-        print("Ghost: ", ghostGrid)
-        print("Counter: ", counter)
-        #print(dir_dict[maxInd])
-        print("===================================")
-
-    return {"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
-
-
-
-
-
 def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     """_summary_
         Simulate all possible paths for the agent to move to find out the most feasible path with the highest survival rate
@@ -293,7 +207,7 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
             return {"statusCode":200, "counter":counter, "replanCount":replan, "closeGhost":closeGhost}
         
         #BFS PLAN
-        if closestGhostDist(x1, y1, ghostGrid)<3:
+        if closestGhostDist(x1, y1, ghostGrid)<2:
             x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
             finalPath.append([x1,y1])
             dictBFS = planDFS(grid, x1, y1, size = size)
@@ -341,6 +255,91 @@ def simulateBFS(grid, size, ghostGrid, prevPosition, startX, startY):
     # print("Agent: ", x1,y1)
     return {"statusCode":400, "counter":counter, "replanCount":replan, "closeGhost":closeGhost}
 
+def executeBFS(grid, size, ghostGrid, prevPosition):
+    """_summary_
+        Implement the path returned by the plan BFS Function
+    Args:
+        grid (2D List): _description_The maze with blocked and unblocked cells along with the ghost spawns
+        size (int): Shape of the maze
+        ghostGrid (list): list of ghost positions on the maze
+        prevPosition (list): Stores the data of the cell being occupied by the ghost whether it is blocked or not
+
+    Returns: The path followed by the agent towards the goal
+        _type_: list
+    """
+    x1, y1 = 0, 0
+    counter = 0
+    closeGhost = 0
+    metricConst = 2
+    finalPath = [[0,0]]
+    # Directions to move
+    agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
+    simulationCount = 5
+    while(counter<1500 and [x1,y1] not in ghostGrid):
+        if grid[x1,y1] == 10:
+            return {"statusCode":200, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
+
+        #START SIMULATION FOR FUTURE PREDICTION
+        dir_dict = list()
+        for ind in range(4):
+            tempX, tempY = x1+agentMove[ind][0], y1+agentMove[ind][1]
+            if isValid(tempX, tempY, size, grid):
+                temp = dict()
+                temp["survivalCount"] = 0
+                temp["avgReplanCount"] = 1
+                temp["avgCloseGhost"] = 1
+                temp["avgSteps"] = 1
+                #"statusCode":200, "counter":counter, "replanCount":replan, "closeGhost":closeGhost
+                for _ in range(simulationCount):
+                    tempGrid = copy.deepcopy(grid)
+                    tempGhostGrid = copy.deepcopy(ghostGrid)
+                    tempPrevPosition = copy.deepcopy(prevPosition)
+                    simulBFS = simulateBFS(tempGrid, size, tempGhostGrid, tempPrevPosition, tempX, tempY)
+                    if simulBFS["statusCode"] == 200:
+                        temp["survivalCount"] += 1
+                        temp["avgReplanCount"] += simulBFS["replanCount"]
+                        temp["avgCloseGhost"] += simulBFS["closeGhost"]
+                        temp["avgSteps"] += simulBFS["counter"]
+                if temp["survivalCount"] > 0:
+                    temp["avgSteps"] /= temp["survivalCount"]
+                    temp["avgReplanCount"] /= temp["survivalCount"]
+                    temp["avgCloseGhost"] /= temp["survivalCount"]
+                    temp["nextStep"] = [tempX, tempY]
+                    temp["metric"] = (metricConst*simulationCount*temp["survivalCount"]) / (temp["avgReplanCount"]*temp["avgCloseGhost"]*temp["avgSteps"])
+                    dir_dict.append(temp)
+            else:
+                continue
+        
+        maxInd = -1
+        metric = -1
+        for i in range(len(dir_dict)) :
+            if dir_dict[i]["metric"] >= metric:
+                maxInd = i
+                metric = dir_dict[i]["metric"]
+        if maxInd != -1 and dir_dict[maxInd]["survivalCount"]>=2:        
+            x1, y1 = dir_dict[maxInd]["nextStep"][0], dir_dict[maxInd]["nextStep"][1]
+        else:#MOVE AWAY FROM CLOSEST GHOSTS
+            closeGhost += 1
+            x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
+        finalPath.append([x1,y1])
+        
+        if [x1,y1] in ghostGrid:
+            return {"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
+
+        #MOVE GHOSTS
+        grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+        counter += 1
+        if counter%30 == 0:
+            print("STEP TAKEN>>>>>>>>>>>>>")
+            print("Agent: ",x1, y1)
+            print("Ghost: ", ghostGrid)
+            print("Counter: ", counter)
+            if maxInd != -1:
+                print(dir_dict[maxInd])
+            print("===================================")
+
+    return {"statusCode":400, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
+
 
 def agent3init(noOfGhosts):
     """_summary_
@@ -356,7 +355,7 @@ def agent3init(noOfGhosts):
     return data
     
 def dataCollection():
-    noOfGhosts = 1
+    noOfGhosts = 5
     final_data = list()
     for i in range(1,51):
         tic = time.perf_counter()
@@ -366,7 +365,7 @@ def dataCollection():
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
         if i%5==0:
-            noOfGhosts += 1
+            noOfGhosts += 2
             print("noOfGhosts: ", noOfGhosts)
             
     df1 = pd.DataFrame(final_data)
