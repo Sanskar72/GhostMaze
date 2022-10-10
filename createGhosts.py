@@ -1,4 +1,4 @@
-# Import Packages and Functions
+# Import Libraries and Functions
 from generateEnvironment import genWorld
 import numpy as np
 import random 

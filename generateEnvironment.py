@@ -1,8 +1,9 @@
-# Import the necessary ibraries
+# Import the necessary libraries
 import numpy as np
 from collections import deque 
 import time
 
+# 51X51 Maze Size
 size = 51
 def generateMap(size):
     """_summary_
@@ -45,7 +46,7 @@ def isValid(a, b, size, visited, grid):
     if (a < 0 or a > size-1) or (b < 0 or b > size-1):
         return False
 
-    # If the cell is already visited
+    # If the cell is blocked
     if visited[a, b] or grid[a, b] == -1:
         return False
     
