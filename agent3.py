@@ -270,12 +270,11 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     x1, y1 = 0, 0
     counter = 0
     closeGhost = 0
-    metricConst = 2
     finalPath = [[0,0]]
     # Directions to move
     agentMove = [[1,0],[0,1],[0,-1],[-1,0]]
     simulationCount = 5
-    while(counter<1500 and [x1,y1] not in ghostGrid):
+    while(counter<800 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
 
@@ -305,7 +304,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
                     temp["avgReplanCount"] /= temp["survivalCount"]
                     temp["avgCloseGhost"] /= temp["survivalCount"]
                     temp["nextStep"] = [tempX, tempY]
-                    temp["metric"] = (metricConst*simulationCount*temp["survivalCount"]) / (temp["avgReplanCount"]*temp["avgCloseGhost"]*temp["avgSteps"])
+                    temp["metric"] = (simulationCount*temp["survivalCount"]) / (temp["avgReplanCount"]*temp["avgCloseGhost"]*temp["avgSteps"])
                     dir_dict.append(temp)
             else:
                 continue
@@ -355,9 +354,9 @@ def agent3init(noOfGhosts):
     return data
     
 def dataCollection():
-    noOfGhosts = 5
+    noOfGhosts = 78
     final_data = list()
-    for i in range(1,51):
+    for i in range(1,21):
         tic = time.perf_counter()
         data = agent3init(noOfGhosts)
         toc = time.perf_counter()
@@ -365,7 +364,7 @@ def dataCollection():
         data["GhostCount"] = noOfGhosts
         final_data.append(data)
         if i%5==0:
-            noOfGhosts += 2
+            noOfGhosts += 6
             print("noOfGhosts: ", noOfGhosts)
             
     df1 = pd.DataFrame(final_data)
