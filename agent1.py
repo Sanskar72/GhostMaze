@@ -123,7 +123,7 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     startX, startY = 0, 0
     dictBFS = planDFS(grid, startX, startY, size)
     statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
-    path = cleanPath(path)
+    #path = cleanPath(path)
     if len(path)>0:
         pos = path[0]
         x1, y1 = pos[0], pos[1]

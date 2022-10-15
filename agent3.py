@@ -277,6 +277,23 @@ def executeBFS(grid, size, ghostGrid, prevPosition):
     while(counter<800 and [x1,y1] not in ghostGrid):
         if grid[x1,y1] == 10:
             return {"statusCode":200, "path":finalPath, "counter":counter, "closeGhostCount":closeGhost}
+        
+        
+        # HERE LIES THE REMAINS OF THE ABILITY OF AGENT 3 TO SENSE NEARBY GHOSTS AND MOVE AWAY FROM THEM. COMMENTED OUT TO GAIN INTERESTING DATA.
+        # if closestGhostDist(x1, y1, ghostGrid)<3:
+        #     x1, y1 = measureDist(x1, y1, grid, ghostGrid, size)
+        #     finalPath.append([x1,y1])
+        #     dictBFS = planDFS(grid, x1, y1, size = size)
+        #     statusCode, path = dictBFS.get("statusCode"), dictBFS.get("path")
+        #     replan += 1
+        #     route = 1
+        #     grid, ghostGrid, prevPosition = ghostMoves(grid, ghostGrid, prevPosition)
+        #     counter += 1
+        #     # print("counter:",counter)
+        #     # print("Ghost: ", ghostGrid)
+        #     # print("Agent: ", x1,y1)
+        #     # print("===============close called===================")
+        #     continue
 
         #START SIMULATION FOR FUTURE PREDICTION
         dir_dict = list()
